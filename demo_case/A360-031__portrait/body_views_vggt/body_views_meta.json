@@ -1,0 +1,56 @@
+{
+  "case_dir": "demo_case/A360-031__portrait",
+  "num_crops": 12,
+  "az_front_deg": 0.0,
+  "left_sign": -1,
+  "frontback_source": "geometric",
+  "selected_views": [
+    "front",
+    "left_side",
+    "right_side",
+    "back"
+  ],
+  "view_paths": {
+    "front": "demo_case/A360-031__portrait/body_views_vggt/body_view_front.png",
+    "left_side": "demo_case/A360-031__portrait/body_views_vggt/body_view_left_side.png",
+    "right_side": "demo_case/A360-031__portrait/body_views_vggt/body_view_right_side.png",
+    "back": "demo_case/A360-031__portrait/body_views_vggt/body_view_back.png"
+  },
+  "per_view": {
+    "front": {
+      "source_frame": 0,
+      "source": "A360-031__portrait_crop000_f0000.png",
+      "azimuth_deg": 0.0
+    },
+    "left_side": {
+      "source_frame": 100,
+      "source": "A360-031__portrait_crop009_f0100.png",
+      "azimuth_deg": 266.91
+    },
+    "right_side": {
+      "source_frame": 44,
+      "source": "A360-031__portrait_crop004_f0044.png",
+      "azimuth_deg": 91.79
+    },
+    "back": {
+      "source_frame": 67,
+      "source": "A360-031__portrait_crop006_f0067.png",
+      "azimuth_deg": 171.39
+    }
+  },
+  "crops_azimuth": {
+    "0": 0.0,
+    "11": 3.8,
+    "22": 21.2,
+    "33": 54.6,
+    "44": 91.8,
+    "55": 130.3,
+    "67": 171.4,
+    "78": 195.7,
+    "89": 222.0,
+    "100": 266.9,
+    "111": 298.8,
+    "123": 345.2
+  },
+  "vlm_front_kept": false
+}

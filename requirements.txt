@@ -1,0 +1,21 @@
+# WorldCast inference dependencies. Verified combo: torch 2.8.0+cu128,
+# transformers 5.8.1 (2026-10-23).
+#
+# Optional attention speedups (auto-fallback to PyTorch SDPA if absent):
+#   flash-attn, xformers, sageattention
+torch>=2.1.0
+torchvision
+transformers>=4.39.0
+diffusers
+huggingface_hub
+safetensors>=0.4.3
+einops
+typing_extensions
+sentencepiece
+imageio[ffmpeg]
+ftfy
+regex
+tqdm
+Pillow
+numpy
+opencv-python
