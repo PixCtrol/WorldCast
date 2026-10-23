@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="ie=edge" http-equiv="x-ua-compatible"/>
+<title>WorldCast: World-Consistent Character Video Generation with Large-Angle Camera Control</title>
+<meta content="WorldCast: World-Consistent Character Video Generation with Large-Angle Camera Control." name="description"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="assets/gallery/anchors/A360_1.png" property="og:image"/>
+<meta content="image/png" property="og:image:type"/>
+<meta content="website" property="og:type"/>
+<meta content="WorldCast: World-Consistent Character Video Generation with Large-Angle Camera Control" property="og:title"/>
+<meta content="One frame plus multi-view anchors from any viewpoint. Any large-angle camera move. Identity intact." property="og:description"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="WorldCast: World-Consistent Character Video Generation with Large-Angle Camera Control" name="twitter:title"/>
+<meta content="One frame plus multi-view anchors from any viewpoint. Any large-angle camera move. Identity intact." name="twitter:description"/>
+<meta content="assets/gallery/anchors/A360_1.png" name="twitter:image"/>
+<link href="img/favicon.png" rel="icon"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#05070d; --bg2:#0a0f1e;
+  --surface:rgba(255,255,255,.045); --surface2:rgba(255,255,255,.03);
+  --border:rgba(255,255,255,.10); --border-hi:rgba(255,255,255,.22);
+  --text:#e7edf8; --muted:#8b98ad; --dim:#5b6a80;
+  --c1:#22d3ee; --c2:#818cf8; --c3:#e879f9; --gold:#fbbf24;
+  --grad:linear-gradient(100deg,var(--c1),var(--c2) 50%,var(--c3));
+  --radius:18px;
+  --font-display:'Space Grotesk',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --font-body:'Inter',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'Cascadia Mono',Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-body);color:var(--text);background:var(--bg);
+  line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(1100px 520px at 85% -5%, rgba(129,140,248,.16), transparent 60%),
+    radial-gradient(900px 480px at -10% 25%, rgba(34,211,238,.11), transparent 60%),
+    radial-gradient(800px 600px at 55% 110%, rgba(232,121,249,.09), transparent 60%),
+    var(--bg);
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background-image:
+    linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);
+  background-size:56px 56px;
+  mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 0%,transparent 75%);
+  -webkit-mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 0%,transparent 75%);
+}
+::selection{background:rgba(129,140,248,.45)}
+a{color:var(--c1);text-decoration:none}
+a:hover{color:#7dd3fc}
+img,video{display:block;max-width:100%}
+
+/* ---------- scroll progress ---------- */
+#progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:2000;
+  background:var(--grad);box-shadow:0 0 12px rgba(129,140,248,.8);transition:width .1s linear}
+
+/* ---------- nav ---------- */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  background:rgba(5,7,13,.72);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+}
+.nav-inner{max-width:1240px;margin:0 auto;padding:0 24px;height:64px;
+  display:flex;align-items:center;gap:28px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);
+  font-weight:700;font-size:19px;color:var(--text);letter-spacing:.2px}
+.brand .mark{width:26px;height:26px;flex:none;border-radius:6px}
+.nav-links{display:flex;gap:4px;margin-left:auto;align-items:center}
+.nav-links a{color:var(--muted);font-size:13.5px;font-weight:500;padding:7px 12px;border-radius:9px;transition:.25s}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.nav-links a.active{color:var(--text);background:rgba(129,140,248,.14)}
+.nav-cta{display:flex;gap:8px;margin-left:6px}
+.nav-gh{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:10px;
+  border:1px solid var(--border-hi);color:var(--text);font-size:13px;font-weight:600;transition:.25s}
+.nav-gh:hover{border-color:var(--c1);color:var(--c1);box-shadow:0 0 16px rgba(34,211,238,.25);transform:translateY(-1px)}
+.nav-gh svg{width:15px;height:15px;fill:currentColor}
+@media(max-width:920px){.nav-links{display:none}}
+
+/* ---------- layout ---------- */
+section{max-width:1240px;margin:0 auto;padding:92px 24px 8px}
+.sec-head{margin-bottom:40px}
+.kicker{font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.22em;
+  text-transform:uppercase;margin-bottom:14px;
+  background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{font-family:var(--font-display);font-weight:700;font-size:clamp(26px,3.6vw,38px);
+  letter-spacing:-.5px;line-height:1.15}
+.sec-sub{color:var(--muted);font-size:16px;max-width:760px;margin-top:14px}
+
+/* ---------- reveal ---------- */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)}
+.reveal.in{opacity:1;transform:none}
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}.d4{transition-delay:.32s}
+
+/* ---------- hero ---------- */
+.hero{position:relative;max-width:1240px;margin:0 auto;padding:150px 24px 30px;text-align:center}
+.badge-line{display:inline-flex;align-items:center;gap:10px;padding:7px 18px;border-radius:999px;
+  border:1px solid var(--border-hi);background:rgba(255,255,255,.04);
+  font-family:var(--font-mono);font-size:12px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.badge-line .dot{width:7px;height:7px;border-radius:50%;background:var(--c1);
+  box-shadow:0 0 10px var(--c1);animation:pulse 2.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.hero h1{
+  margin:30px 0 6px;font-family:var(--font-display);font-weight:700;
+  font-size:clamp(52px,9vw,110px);letter-spacing:-2.5px;line-height:.98;
+  background:linear-gradient(100deg,#fff 10%,var(--c1) 38%,var(--c2) 60%,var(--c3) 85%);
+  background-size:220% auto;-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:shine 7s linear infinite;
+}
+@keyframes shine{to{background-position:220% center}}
+.hero .hero-logo{width:min(190px,42vw);border-radius:22px;display:block;margin:0 auto 6px;
+  box-shadow:0 18px 60px rgba(0,0,0,.55),0 0 0 1px var(--border)}
+.hero .subtitle{font-family:var(--font-display);font-size:clamp(17px,2.4vw,24px);font-weight:500;
+  color:#c4cfdf;max-width:860px;margin:14px auto 0;line-height:1.4}
+.hero .tagline{color:var(--dim);font-size:15px;margin-top:14px;font-family:var(--font-mono)}
+.hero .authors{margin-top:26px;font-size:16.5px;color:#dfe7f3;font-weight:500;letter-spacing:.01em;line-height:1.9}
+.hero .authors sup{font-size:10.5px;color:var(--dim);margin-left:1px}
+.hero .affils{margin-top:8px;color:var(--muted);font-size:13.5px;line-height:1.7}
+.hero .affils sup{font-size:10px;color:var(--dim)}
+.hero .author-note{margin-top:10px;color:var(--dim);font-size:12px;font-family:var(--font-mono)}
+.hero-btns{display:flex;gap:14px;justify-content:center;margin:34px 0 10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:9px;padding:13px 26px;border-radius:12px;
+  font-family:var(--font-display);font-size:15px;font-weight:600;cursor:pointer;transition:.3s;border:1px solid transparent}
+.btn svg{width:16px;height:16px;fill:currentColor}
+.btn-primary{background:var(--grad);color:#fff;box-shadow:0 8px 30px rgba(99,102,241,.4)}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 14px 40px rgba(99,102,241,.55);color:#fff}
+.btn-ghost{border-color:var(--border-hi);color:var(--text);background:rgba(255,255,255,.03)}
+.btn-ghost:hover{border-color:var(--c3);color:#f5d0fe;box-shadow:0 0 22px rgba(232,121,249,.22);transform:translateY(-3px)}
+.btn.disabled{opacity:.45;cursor:not-allowed}
+.btn.disabled:hover{transform:none;box-shadow:none;border-color:var(--border-hi);color:var(--text)}
+
+/* rotating ring badge */
+.orbit-wrap{position:relative;height:0}
+.orbit-badge{position:absolute;right:2%;top:-90px;width:150px;height:150px;opacity:.9}
+.orbit-badge .ring{animation:spin 26s linear infinite;transform-origin:50% 50%}
+@keyframes spin{to{transform:rotate(360deg)}}
+.orbit-badge text{fill:var(--muted);font-family:var(--font-mono);font-size:10.5px;letter-spacing:2.6px;text-transform:uppercase}
+.orbit-badge .core{fill:none;stroke:var(--c2);stroke-width:1;opacity:.6}
+@media(max-width:1000px){.orbit-badge{display:none}}
+
+/* hero film strips */
+.film{margin-top:44px}
+.film-frame{position:relative;border-radius:20px;padding:2px;background:linear-gradient(130deg,rgba(34,211,238,.5),rgba(129,140,248,.35),rgba(232,121,249,.5));
+  box-shadow:0 24px 80px rgba(0,0,0,.55),0 0 60px rgba(99,102,241,.18)}
+.film-frame video{width:100%;border-radius:18px;background:#000}
+.film-caption{margin-top:14px;color:var(--dim);font-size:13px;font-family:var(--font-mono);letter-spacing:.06em}
+.film-portrait{max-width:56%;margin:26px auto 0}
+
+/* ---------- stats ---------- */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:56px}
+.stat{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));
+  border:1px solid var(--border);border-radius:var(--radius);padding:26px 18px;text-align:center;
+  transition:.35s;position:relative;overflow:hidden}
+.stat::before{content:"";position:absolute;inset:0;opacity:0;transition:.35s;
+  background:radial-gradient(220px 90px at 50% 0%,rgba(129,140,248,.18),transparent 70%)}
+.stat:hover{transform:translateY(-5px);border-color:rgba(129,140,248,.45)}
+.stat:hover::before{opacity:1}
+.stat .num{font-family:var(--font-display);font-size:clamp(28px,3.4vw,42px);font-weight:700;letter-spacing:-1px;
+  background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat .lbl{color:var(--muted);font-size:12.5px;margin-top:8px;font-family:var(--font-mono);letter-spacing:.04em}
+@media(max-width:900px){.stats{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:560px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- overview ---------- */
+.abstract{max-width:860px;color:#c7d2e2;font-size:16.5px}
+.abstract strong{color:#fff}
+.abstract .hl{background:linear-gradient(transparent 62%,rgba(129,140,248,.38) 62%);padding:0 2px;color:#fff;font-weight:600}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:46px}
+.feature{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));
+  border:1px solid var(--border);border-radius:var(--radius);padding:30px 26px;transition:.35s;overflow:hidden}
+.feature:hover{transform:translateY(-6px);border-color:rgba(34,211,238,.5);box-shadow:0 18px 50px rgba(0,0,0,.45),0 0 30px rgba(34,211,238,.12)}
+.feature .idx{font-family:var(--font-mono);font-size:12px;color:var(--dim);letter-spacing:.2em}
+.feature h3{font-family:var(--font-display);font-size:20px;font-weight:700;margin:12px 0 12px;letter-spacing:-.3px}
+.feature p{color:var(--muted);font-size:14.5px}
+.feature .chip{position:absolute;top:24px;right:22px;font-family:var(--font-mono);font-size:11px;
+  padding:4px 10px;border-radius:999px;border:1px solid rgba(34,211,238,.4);color:var(--c1)}
+.feature .f-link{color:var(--c1);font-weight:600;font-size:13px;white-space:nowrap}
+.feature .f-link:hover{color:#7dd3fc;text-shadow:0 0 12px rgba(34,211,238,.5)}
+@media(max-width:900px){.features{grid-template-columns:1fr}}
+
+/* ---------- explorer ---------- */
+.explorer{background:linear-gradient(180deg,rgba(255,255,255,.028),transparent 320px)}
+.explorer-panel{display:block}
+.explorer-stage{position:relative;width:fit-content;max-width:100%;margin:0 auto;border-radius:20px;padding:2px;
+  background:linear-gradient(140deg,rgba(34,211,238,.55),rgba(232,121,249,.45));
+  box-shadow:0 24px 70px rgba(0,0,0,.5)}
+.explorer-stage video{display:block;height:min(58vh,560px);width:auto;max-width:100%;object-fit:contain;border-radius:18px;background:#000}
+.shuffle{position:absolute;bottom:16px;right:16px;z-index:3;padding:9px 18px;border-radius:999px;cursor:pointer;
+  background:rgba(5,7,13,.78);backdrop-filter:blur(8px);border:1px solid var(--border-hi);color:var(--text);
+  font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;transition:.25s}
+.shuffle:hover{border-color:var(--c1);color:var(--c1);box-shadow:0 0 18px rgba(34,211,238,.35)}
+.side-label{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;text-align:center;
+  color:var(--dim);margin:26px 0 14px}
+.side-label:first-child{margin-top:2px}
+.scene-grid{display:grid;grid-template-columns:repeat(4,minmax(0,190px));gap:14px;justify-content:center}
+.scene-pill{position:relative;border-radius:12px;overflow:hidden;cursor:pointer;border:2px solid transparent;
+  aspect-ratio:1/1;background:#000;transition:.25s}
+.scene-pill img{width:100%;height:100%;object-fit:cover;opacity:.75;transition:.3s}
+.scene-pill:hover img{opacity:1;transform:scale(1.06)}
+.scene-pill.active{border-color:var(--c1);box-shadow:0 0 18px rgba(34,211,238,.4)}
+.scene-pill.active img{opacity:1}
+.traj-list{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.traj-pill{width:200px;border:2px solid var(--border);border-radius:14px;padding:10px;cursor:pointer;text-align:center;
+  background:var(--surface2);transition:.25s}
+.traj-pill img{width:100%;height:150px;object-fit:contain;filter:saturate(.55) brightness(1.15);transition:.3s}
+.traj-pill .tl{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:7px;letter-spacing:.03em}
+.traj-pill:hover{border-color:var(--border-hi)}
+.traj-pill:hover img{filter:saturate(1)}
+.traj-pill.active{border-color:var(--c3);background:rgba(232,121,249,.08);box-shadow:0 0 18px rgba(232,121,249,.28)}
+.traj-pill.active .tl{color:var(--c3);font-weight:600}
+
+/* ---------- method ---------- */
+.method-figure{margin:4px 0 46px}
+.fig-frame{background:#fff;border-radius:16px;padding:12px;border:1px solid var(--border);
+  box-shadow:0 22px 64px rgba(0,0,0,.55),0 0 40px rgba(99,102,241,.08);transition:.35s}
+.fig-frame:hover{transform:translateY(-4px);box-shadow:0 28px 74px rgba(0,0,0,.6),0 0 50px rgba(99,102,241,.14)}
+.fig-frame img{width:100%;border-radius:8px}
+.fig-caption{text-align:center;color:var(--dim);font-size:13px;margin-top:14px;
+  font-family:var(--font-mono);letter-spacing:.03em}
+
+/* ---------- results ---------- */
+.table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:auto;background:rgba(255,255,255,.02)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:820px}
+th{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);
+  padding:14px 12px;text-align:center;border-bottom:1px solid var(--border);background:rgba(5,7,13,.55)}
+th:first-child,td:first-child{text-align:left;padding-left:20px}
+td{padding:11px 12px;text-align:center;border-bottom:1px solid rgba(255,255,255,.05);color:#b9c5d8}
+td.meth{color:#dbe4f2;font-weight:500}
+tr.cat-row td{background:rgba(129,140,248,.07);color:var(--muted);font-family:var(--font-mono);
+  font-size:11px;letter-spacing:.14em;text-transform:uppercase;text-align:left;padding:9px 20px}
+tr.ours td{background:linear-gradient(90deg,rgba(251,191,36,.13),rgba(251,191,36,.04));
+  color:#fde68a;font-weight:700;border-top:1px solid rgba(251,191,36,.5);border-bottom:1px solid rgba(251,191,36,.5)}
+tr.ours td.meth{color:var(--gold)}
+tr:not(.cat-row):not(.ours):hover td{background:rgba(255,255,255,.035)}
+.best{color:#fff;position:relative}
+.second{color:#dce5f2;border-bottom:1.5px dotted rgba(220,229,242,.55)}
+tr.ours .best::after{content:"";position:absolute;inset:-2px -6px;border-radius:6px;
+  box-shadow:0 0 12px rgba(251,191,36,.45);pointer-events:none}
+.tbl-note{margin-top:12px;font-family:var(--font-mono);font-size:11.5px;color:var(--dim);letter-spacing:.04em}
+.tbl-note b{color:#c9d5e8;font-weight:600}
+.charts{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:30px}
+.chart{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));
+  border:1px solid var(--border);border-radius:var(--radius);padding:26px 24px}
+.chart h4{font-family:var(--font-display);font-size:16px;font-weight:700;margin-bottom:4px}
+.chart .dir{font-family:var(--font-mono);font-size:11px;color:var(--dim);letter-spacing:.1em;margin-bottom:20px}
+.bar-row{margin-bottom:13px}
+.bar-row .bl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px}
+.bar-row .bl b{color:#c9d5e8;font-weight:600;font-family:var(--font-mono)}
+.bar-row.ours .bl b{color:var(--gold)}
+.bar-track{height:9px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.bar-fill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--c2),var(--c1));
+  transition:width 1.3s cubic-bezier(.16,1,.3,1)}
+.bar-row.ours .bar-fill{background:linear-gradient(90deg,#f59e0b,var(--gold));box-shadow:0 0 14px rgba(251,191,36,.55)}
+@media(max-width:900px){.charts{grid-template-columns:1fr}}
+
+/* ---------- compare ---------- */
+.cmp-controls{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:26px}
+.case-pill{padding:9px 22px;border-radius:999px;cursor:pointer;font-family:var(--font-mono);font-size:12.5px;
+  background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);transition:.25s;letter-spacing:.04em}
+.case-pill:hover{color:var(--text);border-color:var(--border-hi)}
+.case-pill.active{background:rgba(129,140,248,.18);border-color:var(--c2);color:#c7d2fe;box-shadow:0 0 16px rgba(129,140,248,.3)}
+.sync-btn{padding:9px 18px;border-radius:999px;cursor:pointer;font-family:var(--font-mono);font-size:12px;
+  background:transparent;border:1px solid rgba(251,191,36,.45);color:var(--gold);transition:.25s;letter-spacing:.06em}
+.sync-btn:hover{background:rgba(251,191,36,.12);box-shadow:0 0 16px rgba(251,191,36,.3)}
+.cmp-context{display:flex;gap:26px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:28px}
+.cmp-context .ctx{display:flex;flex-direction:column;gap:8px;align-items:center}
+.cmp-context img{border-radius:12px;border:1px solid var(--border);max-height:240px;max-width:100%;object-fit:contain;background:#000}
+.cmp-context .cl{font-family:var(--font-mono);font-size:11px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase}
+.method-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:900px){.method-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.method-grid{grid-template-columns:repeat(2,1fr)}}
+.mcell{position:relative;border-radius:14px;overflow:hidden;background:#000;border:2px solid var(--border);
+  transition:.3s}
+.mcell video{width:100%;aspect-ratio:9/16;object-fit:cover}
+.mcell .ml{position:absolute;left:0;right:0;bottom:0;padding:16px 8px 8px;text-align:center;
+  background:linear-gradient(transparent,rgba(0,0,0,.85));color:#cfd9e8;font-size:11.5px;font-weight:600;
+  font-family:var(--font-mono);letter-spacing:.03em}
+.mcell:hover{transform:translateY(-4px) scale(1.015);border-color:var(--border-hi);box-shadow:0 14px 36px rgba(0,0,0,.5)}
+.mcell.ours{border:2px solid var(--gold);box-shadow:0 0 26px rgba(251,191,36,.35)}
+.mcell.ours .ml{color:var(--gold);background:linear-gradient(transparent,rgba(0,0,0,.85)),linear-gradient(0deg,rgba(251,191,36,.16),transparent 60%)}
+.mcell.ours:hover{box-shadow:0 0 40px rgba(251,191,36,.5)}
+
+/* ---------- gallery ---------- */
+.gal-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px}
+.gtab{padding:8px 20px;border-radius:999px;cursor:pointer;font-size:13.5px;font-weight:600;font-family:var(--font-display);
+  background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);transition:.25s}
+.gtab:hover{color:var(--text)}
+.gtab.active{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 6px 22px rgba(99,102,241,.4)}
+.gal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.gal-grid.landscape{grid-template-columns:1fr}
+.gcard{display:flex;border-radius:16px;overflow:hidden;border:1px solid var(--border);
+  background:#000;transition:.35s;position:relative;content-visibility:auto;contain-intrinsic-size:auto 380px}
+.gcard:hover{border-color:rgba(129,140,248,.55);box-shadow:0 16px 44px rgba(0,0,0,.5);transform:translateY(-4px)}
+.gcard img,.gcard video{width:50%;object-fit:cover}
+.gcard .gtag{position:absolute;top:10px;left:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;
+  background:rgba(5,7,13,.75);border:1px solid var(--border-hi);color:#aebdd4;padding:3px 10px;border-radius:999px;
+  opacity:0;transition:.3s;text-transform:uppercase;backdrop-filter:blur(6px)}
+.gcard:hover .gtag{opacity:1}
+.gal-cat-title{font-family:var(--font-display);font-size:19px;font-weight:700;margin:38px 0 16px;letter-spacing:-.2px;
+  display:flex;align-items:center;gap:12px}
+.gal-cat-title::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(129,140,248,.4),transparent)}
+.gal-cat-title .cnt{font-family:var(--font-mono);font-size:11px;color:var(--dim);font-weight:400}
+@media(max-width:860px){.gal-grid{grid-template-columns:1fr}}
+
+/* ---------- citation ---------- */
+.bib{position:relative;max-width:860px;margin:0 auto;background:rgba(5,7,13,.75);
+  border:1px solid var(--border);border-radius:16px;padding:28px 30px;font-family:var(--font-mono);
+  font-size:13px;line-height:1.8;color:#a8bcdd;overflow-x:auto}
+.bib .kw{color:var(--c2)}.bib .str{color:#9ce7d5}
+.copy-btn{position:absolute;top:14px;right:14px;padding:6px 14px;border-radius:8px;cursor:pointer;
+  background:rgba(255,255,255,.06);border:1px solid var(--border-hi);color:var(--muted);
+  font-family:var(--font-mono);font-size:11px;transition:.25s}
+.copy-btn:hover{color:var(--c1);border-color:var(--c1)}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--border);margin-top:100px;padding:44px 24px 56px;text-align:center;color:var(--dim);font-size:13.5px}
+footer .fbrand{font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--muted);margin-bottom:10px}
+footer p{max-width:640px;margin:6px auto}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--c1)}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<nav>
+  <div class="nav-inner">
+    <a class="brand" href="#top">
+      <img class="mark" src="assets/logo.png" alt="WorldCast logo"/>
+      WorldCast
+    </a>
+    <div class="nav-links">
+      <a href="#overview">Overview</a>
+      <a href="#explore">Trajectories</a>
+      <a href="#method">Method</a>
+      <a href="#results">Results</a>
+      <a href="#compare">Comparison</a>
+      <a href="#gallery">Gallery</a>
+      <a href="#cite">Citation</a>
+    </div>
+    <div class="nav-cta">
+      <a class="nav-gh" href="https://github.com/PixCtrol/WorldCast" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ================= HERO ================= -->
+<header class="hero" id="top">
+  <div class="orbit-wrap">
+    <svg class="orbit-badge" viewBox="0 0 150 150">
+      <defs><path id="circ" d="M75,75 m-58,0 a58,58 0 1,1 116,0 a58,58 0 1,1 -116,0"/></defs>
+      <circle class="core" cx="75" cy="75" r="34"/>
+      <g class="ring"><text><textPath href="#circ">LARGE-ANGLE CAMERA CONTROL · WORLD-CONSISTENT · IDENTITY-PRESERVED ·</textPath></text></g>
+      <circle cx="75" cy="41" r="3" fill="#22d3ee"/>
+      <text x="75" y="80" text-anchor="middle" style="font-size:14px;fill:#818cf8;letter-spacing:1px">360°</text>
+    </svg>
+  </div>
+
+  <img class="hero-logo reveal" src="assets/logo.png" alt="WorldCast project emblem"/>
+
+  <h1>WorldCast</h1>
+  <p class="subtitle">World-Consistent Character Video Generation<br/>with Large-Angle Camera Control</p>
+
+  <p class="authors reveal d1">
+    Lei Cao<sup>1,2*</sup> · Yu Liu<sup>2*</sup> · Wenhua Liao<sup>2</sup> · Peng Zhang<sup>2‡</sup> · Fei Wang<sup>2</sup> ·
+    Hao Zhang<sup>1</sup> · Jiajun Le<sup>1</sup> · Daiguo Zhou<sup>2†</sup> · Jian Luan<sup>2</sup> · Jiayi Ma<sup>1,3†</sup>
+  </p>
+  <p class="affils reveal d1">
+    <sup>1</sup>Electronic Information School, Wuhan University &nbsp;&nbsp; <sup>2</sup>MiLM Plus, Xiaomi Inc. &nbsp;&nbsp; <sup>3</sup>School of Robotics, Wuhan University
+  </p>
+  <p class="author-note reveal d1">* Equal Contribution &nbsp;·&nbsp; ‡ Project Lead &nbsp;·&nbsp; † Co-corresponding Authors</p>
+
+  <p class="tagline">one frame &amp; anchors from any viewpoint &nbsp;·&nbsp; any large-angle move &nbsp;·&nbsp; identity intact</p>
+
+  <div class="hero-btns">
+    <a class="btn btn-primary" href="#explore">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      Watch it move
+    </a>
+    <a class="btn btn-ghost disabled" href="javascript:void(0)">
+      <svg viewBox="0 0 24 24"><path d="M1.4446 11.5059c0 1.1021.1673 2.1585.4847 3.1563-.0378-.0028-.0691-.0058-.1058-.0058-.4209 0-.8015.16-1.0704.4512-.3454.3737-.4984.8335-.4316 1.293a1.576 1.576 0 0 0 .2148.5978c-.2319.1864-.4018.4456-.4844.7578-.0646.2448-.131.7543.2149 1.2794a1.4552 1.4552 0 0 0-.0625.1055c-.208.3923-.2207.8372-.0371 1.25.2783.6258.9696 1.1175 2.3126 1.6467.8356.3292 1.5988.5411 1.6056.543 1.1046.2847 2.104.4277 2.969.4277 1.4173 0 2.4754-.3849 3.1525-1.1446 1.538.2651 2.791.1403 3.592.006.6773.7555 1.7332 1.1387 3.1467 1.1387.8649 0 1.8643-.143 2.969-.4278.0068-.0019.77-.2138 1.6056-.543 1.343-.5292 2.0343-1.0208 2.3126-1.6466.1836-.4129.171-.8577-.037-1.25a1.4685 1.4685 0 0 0-.0626-.1056c.346-.525.2795-1.0346.2149-1.2793-.0826-.3122-.2525-.5714-.4844-.7579.11-.1816.1831-.3788.2148-.5977.0669-.4595-.0862-.9193-.4316-1.293-.2688-.2913-.6495-.4513-1.0704-.4513-.0209 0-.0376.0008-.0588.0018.3162-.9966.4846-2.0518.4846-3.1523 0-5.807-4.7362-10.5144-10.5789-10.5144-5.8426 0-10.5788 4.7073-10.5788 10.5144Zm10.5788-9.4831c5.2727 0 9.5476 4.246 9.5476 9.483a9.4201 9.4201 0 0 1-.2696 2.2365c-.0039-.0047-.0079-.011-.0117-.0156-.274-.3255-.6679-.5059-1.1075-.5059-.352 0-.714.1155-1.0763.3438-.2403.1517-.5058.422-.7793.7598-.2534-.3492-.608-.5832-1.0137-.6465a1.5174 1.5174 0 0 0-.2344-.0176c-.9263 0-1.4828.7993-1.6935 1.5177-.1046.2426-.6065 1.3482-1.3614 2.0978-1.1681 1.1601-1.4458 2.3534-.8396 3.6382-.843.1029-1.5836.0927-2.365-.006.5906-1.212.3626-2.4388-.8426-3.6322-.755-.7496-1.2568-1.8552-1.3614-2.0978-.2107-.7184-.7673-1.5177-1.6935-1.5177-.078 0-.1568.0054-.2344.0176-.4057.0633-.7604.2973-1.0137.6465-.2735-.3379-.539-.6081-.7794-.7598-.3622-.2283-.7243-.3438-1.0762-.3438-.4266 0-.8094.171-1.0821.4786a9.4208 9.4208 0 0 1-.2598-2.1936c0-5.237 4.2749-9.483 9.5475-9.483zM8.6443 7.0036c-.4838.0043-.9503.2667-1.1934.7227-.3536.6633-.1006 1.4873.5645 1.84.351.1862.4883-.5261.836-.6485.3107-.1095.841.399 1.0078.086.3536-.6634.1025-1.4874-.5625-1.84a1.3659 1.3659 0 0 0-.6524-.1602Zm6.8403 0c-.2199-.002-.4426.05-.6504.1602-.665.3526-.9181 1.1766-.5645 1.84.1669.313.6971-.1955 1.0079-.086.3476.1224.4867.8347.838.6485.6649-.3527.916-1.1767.5624-1.84-.243-.456-.7096-.7184-1.1934-.7227Zm-9.7565 1.418a.8768.8768 0 0 0-.877.877c0 .4846.3925.877.877.877a.8768.8768 0 0 0 .877-.877.8768.8768 0 0 0-.877-.877zm12.6434 0c-.4845 0-.879.3925-.879.877 0 .4846.3945.877.879.877a.8768.8768 0 0 0 .877-.877.8768.8768 0 0 0-.877-.877zM8.7927 11.459c-.179-.003-.2793.1107-.2793.416 0 .8097.3874 2.125 1.4279 2.924.207-.7123 1.3453-1.2832 1.5079-1.2012.2315.1167.2191.4417.6074.7266.3884-.285.374-.6098.6056-.7266.1627-.082 1.3009.4889 1.5079 1.2012 1.0404-.799 1.4278-2.1144 1.4278-2.924 0-1.2212-1.583.6402-3.5413.6485-1.4686-.0061-2.7266-1.0558-3.2639-1.0645zM4.312 14.4768c.5792.365 1.6964 2.2751 2.1056 3.0177.1371.2488.371.3536.582.3536.4188 0 .7465-.4138.0391-.9395-1.0636-.791-.6914-2.0846-.1836-2.1642a.4302.4302 0 0 1 .0664-.004c.4616 0 .666.7892.666.7892s.5959 1.4898 1.6213 2.508c.942.9356 1.062 1.703.4961 2.6661-.0164-.004-.0159.0236-.1484.2149-.1853.2673-.4322.4688-.7188.6152-.5062.2269-1.1397.2696-1.7833.2696-1.037 0-2.1017-.1824-2.6975-.336-.0293-.0075-3.6505-.9567-3.1916-1.8224.0771-.1454.2033-.2031.3633-.2031.6463 0 1.823.9551 2.3283.9551.113 0 .196-.0865.2285-.2031.2249-.8045-3.2787-1.0522-2.9846-2.1642.0519-.1967.193-.2757.3907-.2754.854 0 2.7704 1.4923 3.172 1.4923.0307 0 .0525-.0085.0645-.0274.2012-.3227.1096-.5865-1.3087-1.4395-1.4182-.8533-2.4315-1.329-1.8653-1.9416.0651-.0707.1574-.1015.2695-.1015.8611.0002 2.8948 1.84 2.8948 1.84s.5487.5683.8809.5683c.0762 0 .1416-.0315.1855-.1054.2355-.3946-2.1858-2.2183-2.3224-2.971-.0926-.51.0641-.7676.3555-.7676-.0006.008.1701-.0285.4942.1759zm16.2257.5918c-.1366.7526-2.5579 2.5764-2.3224 2.9709.044.074.1092.1055.1855.1055.3321 0 .881-.5684.881-.5684s2.0336-1.8397 2.8947-1.84c.1121 0 .2044.0308.2695.1016.5662.6125-.447 1.0882-1.8653 1.9415-1.4183.853-1.51 1.1168-1.3087 1.4396.012.0188.0337.0273.0644.0273.4016 0 2.3181-1.4923 3.1721-1.4923.1977-.0002.3388.0787.3907.2754.294 1.112-3.2095 1.3597-2.9846 2.1642.0325.1166.1156.2032.2285.2032.5054 0 1.682-.9552 2.3283-.9552.16 0 .2862.0577.3633.2032.459.8656-3.1623 1.8149-3.1916 1.8224-.5958.1535-1.6605.336-2.6975.336-.6351 0-1.261-.0409-1.7638-.2599-.2949-.1472-.5488-.3516-.7383-.625-.0411-.0682-.1026-.1476-.1426-.205-.5726-.9679-.455-1.7371.4903-2.676 1.0254-1.0182 1.6212-2.508 1.6212-2.508s.2044-.7891.666-.7891a.4318.4318 0 0 1 .0665.0039c.5078.0796.88 1.3732-.1836 2.1642-.7074.5257-.3797.9395.039.9395.211 0 .445-.1047.5821-.3535.4092-.7426 1.5264-2.6527 2.1056-3.0178.5588-.3524.99-.1816.8497.5918z"/></svg>
+      Model Weights · coming soon
+    </a>
+    <a class="btn btn-ghost disabled" href="javascript:void(0)">
+      <svg viewBox="0 0 24 24"><path d="M1.4446 11.5059c0 1.1021.1673 2.1585.4847 3.1563-.0378-.0028-.0691-.0058-.1058-.0058-.4209 0-.8015.16-1.0704.4512-.3454.3737-.4984.8335-.4316 1.293a1.576 1.576 0 0 0 .2148.5978c-.2319.1864-.4018.4456-.4844.7578-.0646.2448-.131.7543.2149 1.2794a1.4552 1.4552 0 0 0-.0625.1055c-.208.3923-.2207.8372-.0371 1.25.2783.6258.9696 1.1175 2.3126 1.6467.8356.3292 1.5988.5411 1.6056.543 1.1046.2847 2.104.4277 2.969.4277 1.4173 0 2.4754-.3849 3.1525-1.1446 1.538.2651 2.791.1403 3.592.006.6773.7555 1.7332 1.1387 3.1467 1.1387.8649 0 1.8643-.143 2.969-.4278.0068-.0019.77-.2138 1.6056-.543 1.343-.5292 2.0343-1.0208 2.3126-1.6466.1836-.4129.171-.8577-.037-1.25a1.4685 1.4685 0 0 0-.0626-.1056c.346-.525.2795-1.0346.2149-1.2793-.0826-.3122-.2525-.5714-.4844-.7579.11-.1816.1831-.3788.2148-.5977.0669-.4595-.0862-.9193-.4316-1.293-.2688-.2913-.6495-.4513-1.0704-.4513-.0209 0-.0376.0008-.0588.0018.3162-.9966.4846-2.0518.4846-3.1523 0-5.807-4.7362-10.5144-10.5789-10.5144-5.8426 0-10.5788 4.7073-10.5788 10.5144Zm10.5788-9.4831c5.2727 0 9.5476 4.246 9.5476 9.483a9.4201 9.4201 0 0 1-.2696 2.2365c-.0039-.0047-.0079-.011-.0117-.0156-.274-.3255-.6679-.5059-1.1075-.5059-.352 0-.714.1155-1.0763.3438-.2403.1517-.5058.422-.7793.7598-.2534-.3492-.608-.5832-1.0137-.6465a1.5174 1.5174 0 0 0-.2344-.0176c-.9263 0-1.4828.7993-1.6935 1.5177-.1046.2426-.6065 1.3482-1.3614 2.0978-1.1681 1.1601-1.4458 2.3534-.8396 3.6382-.843.1029-1.5836.0927-2.365-.006.5906-1.212.3626-2.4388-.8426-3.6322-.755-.7496-1.2568-1.8552-1.3614-2.0978-.2107-.7184-.7673-1.5177-1.6935-1.5177-.078 0-.1568.0054-.2344.0176-.4057.0633-.7604.2973-1.0137.6465-.2735-.3379-.539-.6081-.7794-.7598-.3622-.2283-.7243-.3438-1.0762-.3438-.4266 0-.8094.171-1.0821.4786a9.4208 9.4208 0 0 1-.2598-2.1936c0-5.237 4.2749-9.483 9.5475-9.483zM8.6443 7.0036c-.4838.0043-.9503.2667-1.1934.7227-.3536.6633-.1006 1.4873.5645 1.84.351.1862.4883-.5261.836-.6485.3107-.1095.841.399 1.0078.086.3536-.6634.1025-1.4874-.5625-1.84a1.3659 1.3659 0 0 0-.6524-.1602Zm6.8403 0c-.2199-.002-.4426.05-.6504.1602-.665.3526-.9181 1.1766-.5645 1.84.1669.313.6971-.1955 1.0079-.086.3476.1224.4867.8347.838.6485.6649-.3527.916-1.1767.5624-1.84-.243-.456-.7096-.7184-1.1934-.7227Zm-9.7565 1.418a.8768.8768 0 0 0-.877.877c0 .4846.3925.877.877.877a.8768.8768 0 0 0 .877-.877.8768.8768 0 0 0-.877-.877zm12.6434 0c-.4845 0-.879.3925-.879.877 0 .4846.3945.877.879.877a.8768.8768 0 0 0 .877-.877.8768.8768 0 0 0-.877-.877zM8.7927 11.459c-.179-.003-.2793.1107-.2793.416 0 .8097.3874 2.125 1.4279 2.924.207-.7123 1.3453-1.2832 1.5079-1.2012.2315.1167.2191.4417.6074.7266.3884-.285.374-.6098.6056-.7266.1627-.082 1.3009.4889 1.5079 1.2012 1.0404-.799 1.4278-2.1144 1.4278-2.924 0-1.2212-1.583.6402-3.5413.6485-1.4686-.0061-2.7266-1.0558-3.2639-1.0645zM4.312 14.4768c.5792.365 1.6964 2.2751 2.1056 3.0177.1371.2488.371.3536.582.3536.4188 0 .7465-.4138.0391-.9395-1.0636-.791-.6914-2.0846-.1836-2.1642a.4302.4302 0 0 1 .0664-.004c.4616 0 .666.7892.666.7892s.5959 1.4898 1.6213 2.508c.942.9356 1.062 1.703.4961 2.6661-.0164-.004-.0159.0236-.1484.2149-.1853.2673-.4322.4688-.7188.6152-.5062.2269-1.1397.2696-1.7833.2696-1.037 0-2.1017-.1824-2.6975-.336-.0293-.0075-3.6505-.9567-3.1916-1.8224.0771-.1454.2033-.2031.3633-.2031.6463 0 1.823.9551 2.3283.9551.113 0 .196-.0865.2285-.2031.2249-.8045-3.2787-1.0522-2.9846-2.1642.0519-.1967.193-.2757.3907-.2754.854 0 2.7704 1.4923 3.172 1.4923.0307 0 .0525-.0085.0645-.0274.2012-.3227.1096-.5865-1.3087-1.4395-1.4182-.8533-2.4315-1.329-1.8653-1.9416.0651-.0707.1574-.1015.2695-.1015.8611.0002 2.8948 1.84 2.8948 1.84s.5487.5683.8809.5683c.0762 0 .1416-.0315.1855-.1054.2355-.3946-2.1858-2.2183-2.3224-2.971-.0926-.51.0641-.7676.3555-.7676-.0006.008.1701-.0285.4942.1759zm16.2257.5918c-.1366.7526-2.5579 2.5764-2.3224 2.9709.044.074.1092.1055.1855.1055.3321 0 .881-.5684.881-.5684s2.0336-1.8397 2.8947-1.84c.1121 0 .2044.0308.2695.1016.5662.6125-.447 1.0882-1.8653 1.9415-1.4183.853-1.51 1.1168-1.3087 1.4396.012.0188.0337.0273.0644.0273.4016 0 2.3181-1.4923 3.1721-1.4923.1977-.0002.3388.0787.3907.2754.294 1.112-3.2095 1.3597-2.9846 2.1642.0325.1166.1156.2032.2285.2032.5054 0 1.682-.9552 2.3283-.9552.16 0 .2862.0577.3633.2032.459.8656-3.1623 1.8149-3.1916 1.8224-.5958.1535-1.6605.336-2.6975.336-.6351 0-1.261-.0409-1.7638-.2599-.2949-.1472-.5488-.3516-.7383-.625-.0411-.0682-.1026-.1476-.1426-.205-.5726-.9679-.455-1.7371.4903-2.676 1.0254-1.0182 1.6212-2.508 1.6212-2.508s.2044-.7891.666-.7891a.4318.4318 0 0 1 .0665.0039c.5078.0796.88 1.3732-.1836 2.1642-.7074.5257-.3797.9395.039.9395.211 0 .445-.1047.5821-.3535.4092-.7426 1.5264-2.6527 2.1056-3.0178.5588-.3524.99-.1816.8497.5918z"/></svg>
+      CLACT Dataset · coming soon
+    </a>
+    <a class="btn btn-ghost" href="https://github.com/PixCtrol/WorldCast" target="_blank" rel="noopener">
+      <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      Code
+    </a>
+    <a class="btn btn-ghost disabled" href="javascript:void(0)">arXiv · coming soon</a>
+  </div>
+
+  <div class="film">
+    <div class="film-frame">
+      <video autoplay loop muted playsinline preload="metadata" src="assets/hero/orig_exec_landscape_2traj.mp4"></video>
+    </div>
+    <p class="film-caption">one subject · two large-angle trajectories · rendered in a single pass</p>
+    <div class="film-frame film-portrait">
+      <video autoplay loop muted playsinline preload="metadata" src="assets/hero/A360-031_portrait_2traj.mp4"></video>
+    </div>
+  </div>
+
+  <div class="stats reveal">
+    <div class="stat"><div class="num"><span data-count="80" data-suffix="K">0</span></div><div class="lbl">training samples</div></div>
+    <div class="stat"><div class="num"><span data-count="42">0</span></div><div class="lbl">eval scenes</div></div>
+    <div class="stat"><div class="num"><span data-count="99">0</span></div><div class="lbl">characters</div></div>
+    <div class="stat"><div class="num"><span data-count="6">0</span></div><div class="lbl">eval trajectory families</div></div>
+    <div class="stat"><div class="num"><span data-count="34" data-suffix="%">0</span></div><div class="lbl">lower ATE than SOTA</div></div>
+  </div>
+</header>
+
+<!-- ================= OVERVIEW ================= -->
+<section id="overview">
+  <div class="sec-head reveal">
+    <div class="kicker">01 · Abstract</div>
+    <h2>Camera moves. The world holds.</h2>
+  </div>
+  <p class="abstract reveal d1">
+    Precise camera control is essential for cinematic character video generation, yet existing methods struggle
+    to follow large-angle trajectories while preserving character identity across viewpoint changes. We introduce
+    <strong>CLACT</strong>, a character-centric benchmark of 80,000 training samples and 42 evaluation scenes, and
+    <strong>WorldCast</strong>, a framework that couples scale-aligned geometric guidance with geometry-aligned
+    multi-view character memory (<strong>GAMA</strong>). WorldCast achieves the best camera-control accuracy and
+    character consistency while maintaining competitive visual quality.
+  </p>
+  <div class="method-figure reveal d1">
+    <div class="fig-frame">
+      <picture>
+        <source srcset="assets/method/teaser.webp" type="image/webp"/>
+        <img src="assets/method/teaser.jpg" alt="WorldCast teaser: generated sequences along tilted circular and lemniscate trajectories, and quantitative comparison on camera accuracy, consistency, and quality" loading="lazy"/>
+      </picture>
+    </div>
+    <p class="fig-caption">Figure 1 · Large-angle trajectories that break prior methods — best camera accuracy (ATE ↓), cross-view consistency (MEt3R ↓), and identity preservation, at competitive image quality.</p>
+  </div>
+  <div class="features">
+    <div class="feature reveal d1">
+      <div class="chip">DATASET</div>
+      <div class="idx">COMPONENT 01</div>
+      <h3>CLACT Benchmark</h3>
+      <p>A character-centric dataset &amp; benchmark for Large-Angle Camera Trajectories: 80,000 synthetic training samples (50K UE5 + 30K Blender), 42 synthetic and real-world evaluation scenes, accurate camera geometry, and paired multi-view character observations. <span class="f-link" style="opacity:.5;cursor:default">Dataset · coming soon</span></p>
+    </div>
+    <div class="feature reveal d2">
+      <div class="chip">GUIDANCE</div>
+      <div class="idx">COMPONENT 02</div>
+      <h3>Scale-Aligned Geometric Guidance</h3>
+      <p>The initial view is lifted to a colored 3D point cloud with calibrated depth scale, then splat-rendered along the target trajectory — producing trajectory-aligned RGB guidance and coverage masks that tell the model exactly what to complete.</p>
+    </div>
+    <div class="feature reveal d3">
+      <div class="chip">MEMORY</div>
+      <div class="idx">COMPONENT 03</div>
+      <h3>Geometry-Aligned Memory Attention</h3>
+      <p>Multi-view anchor geometry is aligned with the target trajectory in a shared coordinate frame via Umeyama alignment, enabling geometry-aware retrieval and injection of view-relevant character features into video tokens.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= EXPLORER ================= -->
+<section id="explore">
+  <div class="sec-head reveal">
+    <div class="kicker">02 · Trajectories</div>
+    <h2>Direct your own shot</h2>
+    <p class="sec-sub">Pick a subject and a camera trajectory — orbit, tilt, push-pull, lemniscate, zoom-out. Every clip below is generated by WorldCast from the single shown input frame plus multi-view anchors.</p>
+  </div>
+  <div class="explorer-panel reveal">
+    <div class="side-label">Subject</div>
+    <div class="scene-grid" id="scene-grid"></div>
+    <div class="explorer-stage">
+      <video id="singleview-video" loop muted playsinline preload="metadata" src="assets/singleview/A360-031/pushpull_180.mp4"></video>
+      <button class="shuffle" id="shuffle-btn">⟲ randomize</button>
+    </div>
+    <div class="side-label">Camera Trajectory</div>
+    <div class="traj-list" id="traj-list"></div>
+  </div>
+</section>
+
+<!-- ================= METHOD ================= -->
+<section id="method">
+  <div class="sec-head reveal">
+    <div class="kicker">03 · Method</div>
+    <h2>From one frame to a world model</h2>
+    <p class="sec-sub">WorldCast couples scale-aligned geometric guidance with geometry-aligned multi-view character memory, built on the Wan2.1-I2V-14B flow-matching backbone.</p>
+  </div>
+  <div class="method-figure reveal">
+    <div class="fig-frame">
+      <picture>
+        <source srcset="assets/method/overview.webp" type="image/webp"/>
+        <img src="assets/method/overview.jpg" alt="WorldCast overview: trajectory-aligned geometric guidance coupled with geometry-aligned multi-view character memory" loading="lazy"/>
+      </picture>
+    </div>
+    <p class="fig-caption">Figure 2 · WorldCast overview — trajectory-aligned geometric guidance coupled with geometry-aligned multi-view character memory (GAMA).</p>
+  </div>
+</section>
+
+<!-- ================= RESULTS ================= -->
+<section id="results">
+  <div class="sec-head reveal">
+    <div class="kicker">04 · Results</div>
+    <h2>State of the art on CLACT</h2>
+    <p class="sec-sub">Evaluated on 42 character-centric scenes × 6 trajectories. WorldCast leads on every camera-control and character-consistency metric while keeping competitive visual quality.</p>
+  </div>
+  <div class="table-wrap reveal">
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th><th>Anchors</th>
+          <th>ATE ↓</th><th>RTE ↓</th><th>RRE ↓</th>
+          <th>MEt3R ↓</th><th>ArcFace ↑</th>
+          <th>CLIP ↑</th><th>DINO ↑</th><th>Subj. ↑</th><th>IQ ↑</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="cat-row"><td colspan="11">Camera-Controlled Generation</td></tr>
+        <tr><td class="meth">CamI2V</td><td>✗</td><td>0.351</td><td>0.281</td><td>11.490</td><td>0.405</td><td>0.147</td><td>0.804</td><td>0.675</td><td>0.874</td><td>0.686</td></tr>
+        <tr><td class="meth">DualCamCtrl</td><td>✗</td><td>0.297</td><td>0.082</td><td>3.607</td><td>0.408</td><td>0.185</td><td>0.796</td><td>0.661</td><td>0.904</td><td>0.699</td></tr>
+        <tr><td class="meth">GEN3C</td><td>✗</td><td>0.130</td><td>0.038</td><td>1.255</td><td>0.306</td><td>0.433</td><td>0.819</td><td>0.696</td><td>0.915</td><td>0.716</td></tr>
+        <tr><td class="meth">Uni3C</td><td>✗</td><td>0.098</td><td>0.033</td><td>1.069</td><td>0.324</td><td>0.374</td><td>0.823</td><td>0.691</td><td>0.911</td><td>0.711</td></tr>
+        <tr><td class="meth">Lyra 2.0</td><td>✗</td><td>0.142</td><td>0.034</td><td>1.741</td><td>0.316</td><td>0.394</td><td>0.817</td><td>0.691</td><td>0.916</td><td class="best">0.725</td></tr>
+        <tr class="cat-row"><td colspan="11">Novel-View Generation</td></tr>
+        <tr><td class="meth">ViewCrafter</td><td>✗</td><td>0.353</td><td>0.203</td><td>9.198</td><td>0.395</td><td>0.223</td><td>0.810</td><td>0.683</td><td>0.888</td><td>0.715</td></tr>
+        <tr><td class="meth">ViewCrafter ⋆</td><td>✓</td><td>0.361</td><td>0.196</td><td>8.902</td><td>0.419</td><td>0.195</td><td>0.795</td><td>0.655</td><td>0.869</td><td>0.715</td></tr>
+        <tr><td class="meth">MVGenMaster</td><td>✗</td><td>0.125</td><td>0.099</td><td>2.929</td><td>0.370</td><td>0.227</td><td>0.796</td><td>0.655</td><td>0.869</td><td>0.699</td></tr>
+        <tr><td class="meth">MVGenMaster ⋆</td><td>✓</td><td>0.218</td><td>0.152</td><td>6.938</td><td>0.301</td><td>0.299</td><td>0.821</td><td>0.707</td><td>0.862</td><td>0.691</td></tr>
+        <tr class="cat-row"><td colspan="11">Video Re-Rendering</td></tr>
+        <tr><td class="meth">ReCamMaster</td><td>✗</td><td>0.295</td><td>0.067</td><td>2.600</td><td>0.335</td><td>0.363</td><td>0.812</td><td>0.678</td><td>0.904</td><td>0.689</td></tr>
+        <tr><td class="meth">DepthDirector</td><td>✗</td><td>0.289</td><td>0.066</td><td>1.732</td><td>0.332</td><td>0.423</td><td>0.826</td><td>0.686</td><td class="best">0.919</td><td>0.705</td></tr>
+        <tr><td class="meth">CameraAnything</td><td>✗</td><td>0.244</td><td>0.078</td><td>4.879</td><td>0.341</td><td>0.358</td><td>0.807</td><td>0.648</td><td>0.898</td><td>0.700</td></tr>
+        <tr class="cat-row"><td colspan="11">Ours</td></tr>
+        <tr class="ours">
+          <td class="meth">WorldCast</td><td>✓</td>
+          <td class="best">0.065</td><td class="best">0.020</td><td class="best">0.896</td>
+          <td class="best">0.228</td><td class="best">0.555</td><td class="best">0.830</td>
+          <td class="best">0.719</td><td class="second">0.917</td><td class="second">0.719</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-note reveal d1"><b>White</b> = best per column &nbsp;·&nbsp; <b>Underlined</b> = second best &nbsp;·&nbsp; ⋆ = additional character views provided as input</p>
+  <div class="charts">
+    <div class="chart reveal d1">
+      <h4>Camera Accuracy</h4>
+      <div class="dir">ABSOLUTE TRAJECTORY ERROR · LOWER IS BETTER</div>
+      <div class="bar-row ours"><div class="bl"><span>WorldCast</span><b>0.065</b></div><div class="bar-track"><div class="bar-fill" data-w="16"></div></div></div>
+      <div class="bar-row"><div class="bl"><span>Uni3C</span><b>0.098</b></div><div class="bar-track"><div class="bar-fill" data-w="24"></div></div></div>
+      <div class="bar-row"><div class="bl"><span>MVGenMaster</span><b>0.125</b></div><div class="bar-track"><div class="bar-fill" data-w="31"></div></div></div>
+      <div class="bar-row"><div class="bl"><span>GEN3C</span><b>0.130</b></div><div class="bar-track"><div class="bar-fill" data-w="32"></div></div></div>
+      <div class="bar-row"><div class="bl"><span>Lyra 2.0</span><b>0.142</b></div><div class="bar-track"><div class="bar-fill" data-w="35"></div></div></div>
+    </div>
+    <div class="chart reveal d2">
+      <h4>Geometric Consistency</h4>
+      <div class="dir">MET3R · LOWER IS BETTER</div>
+      <div class="bar-row ours"><div class="bl"><span>WorldCast</span><b>0.228</b></div><div class="bar-track"><div class="bar-fill" data-w="45"></div></div></div>
+      <div class="bar-row"><div class="bl"><span>MVGenMaster ⋆</span><b>0.301</b></div><div class="bar-track"><div class="bar-fill" data-w="59"></div></div></div>
+      <div class="bar-row"><div class="bl"><span>GEN3C</span><b>0.306</b></div><div class="bar-track"><div class="bar-fill" data-w="60"></div></div></div>
+      <div class="bar-row"><div class="bl"><span>Lyra 2.0</span><b>0.316</b></div><div class="bar-track"><div class="bar-fill" data-w="62"></div></div></div>
+      <div class="bar-row"><div class="bl"><span>Uni3C</span><b>0.324</b></div><div class="bar-track"><div class="bar-fill" data-w="64"></div></div></div>
+    </div>
+    <div class="chart reveal d3">
+      <h4>Identity Preservation</h4>
+      <div class="dir">ARCFACE SIMILARITY · HIGHER IS BETTER</div>
+      <div class="bar-row ours"><div class="bl"><span>WorldCast</span><b>0.555</b></div><div class="bar-track"><div class="bar-fill" data-w="100"></div></div></div>
+      <div class="bar-row"><div class="bl"><span>GEN3C</span><b>0.433</b></div><div class="bar-track"><div class="bar-fill" data-w="78"></div></div></div>
+      <div class="bar-row"><div class="bl"><span>DepthDirector</span><b>0.423</b></div><div class="bar-track"><div class="bar-fill" data-w="76"></div></div></div>
+      <div class="bar-row"><div class="bl"><span>Lyra 2.0</span><b>0.394</b></div><div class="bar-track"><div class="bar-fill" data-w="71"></div></div></div>
+      <div class="bar-row"><div class="bl"><span>Uni3C</span><b>0.374</b></div><div class="bar-track"><div class="bar-fill" data-w="67"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= COMPARISON ================= -->
+<section id="compare">
+  <div class="sec-head reveal">
+    <div class="kicker">05 · Comparison</div>
+    <h2>The arena</h2>
+    <p class="sec-sub">Large-angle orbit with push-pull — the hardest shot in the benchmark. Same input, same trajectory, thirteen methods. Watch the character survive.</p>
+  </div>
+  <div class="cmp-controls reveal">
+    <div class="case-pill active" data-case="A360-005">case 01 · orbit 360° + push-pull</div>
+    <div class="case-pill" data-case="A360-030">case 02 · orbit 360° + push-pull</div>
+    <button class="sync-btn" id="sync-btn">⟳ sync restart</button>
+  </div>
+  <div class="cmp-context reveal">
+    <div class="ctx"><img id="cmp-anchor" src="assets/singleview/A360-005/input.png" alt="input frame + anchors"/><div class="cl">Input &amp; Anchors</div></div>
+    <div class="ctx"><img src="assets/traj_schematics/arc_pushpull_s360_w2_amp15.png" alt="trajectory schematic"/><div class="cl">Camera Trajectory</div></div>
+  </div>
+  <div class="method-grid reveal" id="method-grid">
+    <div class="mcell ours"><video loop muted playsinline preload="none" data-method="WorldCast" src="assets/comparison_methods/WorldCast/A360-005.mp4"></video><div class="ml">WorldCast · Ours</div></div>
+    <div class="mcell"><video loop muted playsinline preload="none" data-method="uni3c" src="assets/comparison_methods/uni3c/A360-005.mp4"></video><div class="ml">Uni3C</div></div>
+    <div class="mcell"><video loop muted playsinline preload="none" data-method="gen3c" src="assets/comparison_methods/gen3c/A360-005.mp4"></video><div class="ml">GEN3C</div></div>
+    <div class="mcell"><video loop muted playsinline preload="none" data-method="lyra" src="assets/comparison_methods/lyra/A360-005.mp4"></video><div class="ml">Lyra 2.0</div></div>
+    <div class="mcell"><video loop muted playsinline preload="none" data-method="mvgenmaster_anchor" src="assets/comparison_methods/mvgenmaster_anchor/A360-005.mp4"></video><div class="ml">MVGenMaster +anc</div></div>
+    <div class="mcell"><video loop muted playsinline preload="none" data-method="mvgenmaster_noanchor" src="assets/comparison_methods/mvgenmaster_noanchor/A360-005.mp4"></video><div class="ml">MVGenMaster</div></div>
+    <div class="mcell"><video loop muted playsinline preload="none" data-method="viewcrafter_anchor" src="assets/comparison_methods/viewcrafter_anchor/A360-005.mp4"></video><div class="ml">ViewCrafter +anc</div></div>
+    <div class="mcell"><video loop muted playsinline preload="none" data-method="viewcrafter_noanchor" src="assets/comparison_methods/viewcrafter_noanchor/A360-005.mp4"></video><div class="ml">ViewCrafter</div></div>
+    <div class="mcell"><video loop muted playsinline preload="none" data-method="recammaster" src="assets/comparison_methods/recammaster/A360-005.mp4"></video><div class="ml">ReCamMaster</div></div>
+    <div class="mcell"><video loop muted playsinline preload="none" data-method="depthdirector" src="assets/comparison_methods/depthdirector/A360-005.mp4"></video><div class="ml">DepthDirector</div></div>
+    <div class="mcell"><video loop muted playsinline preload="none" data-method="dualcamctrl" src="assets/comparison_methods/dualcamctrl/A360-005.mp4"></video><div class="ml">DualCamCtrl</div></div>
+    <div class="mcell"><video loop muted playsinline preload="none" data-method="cameraanything" src="assets/comparison_methods/cameraanything/A360-005.mp4"></video><div class="ml">CameraAnything</div></div>
+  </div>
+</section>
+
+<!-- ================= GALLERY ================= -->
+<section id="gallery">
+  <div class="sec-head reveal">
+    <div class="kicker">06 · Gallery</div>
+    <h2>Made with WorldCast</h2>
+    <p class="sec-sub">Left: input frame &amp; multi-view anchors. Right: generated video along a large-angle trajectory.</p>
+  </div>
+  <div class="gal-tabs reveal">
+    <div class="gtab active" data-cat="all">All</div>
+    <div class="gtab" data-cat="character">Character</div>
+    <div class="gtab" data-cat="animal">Animal</div>
+    <div class="gtab" data-cat="object">Object</div>
+    <div class="gtab" data-cat="anime">Anime</div>
+  </div>
+  <div id="gal-container"></div>
+</section>
+
+<!-- ================= CITATION ================= -->
+<section id="cite">
+  <div class="sec-head reveal">
+    <div class="kicker">07 · Citation</div>
+    <h2>Cite WorldCast</h2>
+  </div>
+  <div class="bib reveal d1">
+    <button class="copy-btn" id="copy-bib">copy</button>
+<pre><span class="kw">@inproceedings</span>{worldcast2027,
+  <span class="kw">title</span>     = {<span class="str">WorldCast: World-Consistent Character Video Generation
+               with Large-Angle Camera Control</span>},
+  <span class="kw">author</span>    = {<span class="str">Anonymous Authors</span>},
+  <span class="kw">booktitle</span> = {<span class="str">International Conference on Learning Representations (ICLR)</span>},
+  <span class="kw">year</span>      = {<span class="str">2027</span>},
+  <span class="kw">note</span>      = {<span class="str">Under double-blind review</span>}
+}</pre>
+  </div>
+</section>
+
+<footer>
+  <div class="fbrand">◆ WorldCast</div>
+  <p>Authors are anonymous during double-blind review.</p>
+  <p>Website template adapted from <a href="https://cat3d.github.io/">CAT3D</a> · redesigned with love for large angles.</p>
+  <p>Videos are best-effort compressed; please be patient while they load.</p>
+</footer>
+
+<script>
+/* ---------- scroll progress + nav active ---------- */
+const progress = document.getElementById('progress');
+const navLinks = [...document.querySelectorAll('.nav-links a')];
+const sections = navLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+addEventListener('scroll', () => {
+  const h = document.documentElement;
+  progress.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight) * 100) + '%';
+  let cur = -1;
+  sections.forEach((s, i) => { if (s.getBoundingClientRect().top < 200) cur = i; });
+  navLinks.forEach((a, i) => a.classList.toggle('active', i === cur));
+}, { passive: true });
+
+/* ---------- reveal + counters + bars ---------- */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add('in');
+    e.target.querySelectorAll('[data-count]').forEach(el => {
+      if (el.dataset.done) return; el.dataset.done = 1;
+      const target = +el.dataset.count, suf = el.dataset.suffix || '';
+      const t0 = performance.now(), dur = 1400;
+      (function tick(t) {
+        const p = Math.min((t - t0) / dur, 1), ease = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(target * ease) + suf;
+        if (p < 1) requestAnimationFrame(tick);
+      })(t0);
+    });
+    e.target.querySelectorAll('.bar-fill').forEach(b => b.style.width = b.dataset.w + '%');
+    io.unobserve(e.target);
+  });
+}, { threshold: 0.15 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* ---------- lazy videos ---------- */
+const vio = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) e.target.play().catch(() => {});
+    else e.target.pause();
+  });
+}, { rootMargin: '120px', threshold: 0.15 });
+document.querySelectorAll('video:not([autoplay])').forEach(v => vio.observe(v));
+
+/* ---------- explorer ---------- */
+const SCENES = ['A360-031','A360-017','A360-030','A360-005','A360-065','STYLE-015','ANM-002','ANM-004','ANM-010','OB-003','OBJ-001','f04eb8f1-d6d5-45fc-a7a9-5629e0e29600'];
+const TRAJS = [
+  ['pushpull_180','arc_pushpull_s180_w2.png','orbit 180° + push-pull'],
+  ['lemniscate','lemniscate.png','lemniscate'],
+  ['orbit_360','flatring.png','orbit 360°'],
+  ['orbit_tilt_360','smoothring_t35.png','tilted orbit 360°'],
+  ['zoom_out','zoom_out.png','zoom out'],
+];
+const sceneGrid = document.getElementById('scene-grid');
+const trajList = document.getElementById('traj-list');
+const svVideo = document.getElementById('singleview-video');
+let curScene = 'A360-031', curTraj = 'pushpull_180';
+
+SCENES.forEach(s => {
+  const d = document.createElement('div');
+  d.className = 'scene-pill' + (s === curScene ? ' active' : '');
+  d.dataset.scene = s;
+  d.innerHTML = `<img src="assets/singleview/${s}/input.png" loading="lazy" alt="${s}"/>`;
+  d.onclick = () => { curScene = s; [...sceneGrid.children].forEach(c => c.classList.toggle('active', c.dataset.scene === s)); updatePlayer(); };
+  sceneGrid.appendChild(d);
+});
+TRAJS.forEach(([id, img, label]) => {
+  const d = document.createElement('div');
+  d.className = 'traj-pill' + (id === curTraj ? ' active' : '');
+  d.dataset.traj = id;
+  d.innerHTML = `<img src="assets/traj_schematics/${img}" alt="${label}"/><div class="tl">${label}</div>`;
+  d.onclick = () => { curTraj = id; [...trajList.children].forEach(c => c.classList.toggle('active', c.dataset.traj === id)); updatePlayer(); };
+  trajList.appendChild(d);
+});
+function updatePlayer() {
+  svVideo.src = `assets/singleview/${curScene}/${curTraj}.mp4`;
+  svVideo.load(); svVideo.play().catch(() => {});
+}
+document.getElementById('shuffle-btn').onclick = () => {
+  const scenes = [...sceneGrid.children], trajs = [...trajList.children];
+  scenes[Math.floor(Math.random() * scenes.length)].click();
+  trajs[Math.floor(Math.random() * trajs.length)].click();
+};
+
+/* ---------- comparison ---------- */
+const casePills = document.querySelectorAll('.case-pill');
+const cmpVideos = document.querySelectorAll('#method-grid video');
+const cmpAnchor = document.getElementById('cmp-anchor');
+casePills.forEach(p => p.onclick = () => {
+  casePills.forEach(x => x.classList.remove('active'));
+  p.classList.add('active');
+  const c = p.dataset.case;
+  cmpVideos.forEach(v => { v.src = `assets/comparison_methods/${v.dataset.method}/${c}.mp4`; v.load(); v.play().catch(() => {}); });
+  cmpAnchor.src = `assets/singleview/${c}/input.png`;
+});
+document.getElementById('sync-btn').onclick = () => {
+  cmpVideos.forEach(v => { v.currentTime = 0; v.play().catch(() => {}); });
+};
+
+/* ---------- gallery ---------- */
+const GALLERY = [
+  { cat: 'character', title: 'Character', groups: [
+    { orient: 'landscape', items: [['A360_10','lemniscate'],['A360_11','tilted orbit'],['A360_4','lemniscate'],['A360_9','tilted orbit']] },
+    { orient: 'portrait', items: [['A360_12','lemniscate'],['A360_1','orbit 360°'],['A360_2','orbit 360°'],['A360_3','lemniscate'],['A360_5','tilted orbit'],['A360_6','orbit 360°'],['A360_7','lemniscate'],['A360_8','tilted orbit']] } ] },
+  { cat: 'animal', title: 'Animal', groups: [
+    { orient: 'landscape', items: [['AN_1',''],['AN_2',''],['AN_3',''],['AN_4',''],['AN_5',''],['AN_7',''],['AN_8',''],['AN_9','']] },
+    { orient: 'portrait', items: [['AN_6',''],['AN_10','']] } ] },
+  { cat: 'object', title: 'Object', groups: [
+    { orient: 'landscape', items: [['OB_1',''],['OB_2',''],['OB_3',''],['OB_5','']] },
+    { orient: 'portrait', items: [['OB_4',''],['OB_6','']] } ] },
+  { cat: 'anime', title: 'Anime', groups: [
+    { orient: 'landscape', items: [['SG_2',''],['SG_3',''],['SG_4',''],['SG_5','']] },
+    { orient: 'portrait', items: [['SG_1',''],['SG_6','']] } ] },
+];
+const gal = document.getElementById('gal-container');
+const galIO = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) e.target.play().catch(() => {}); else e.target.pause();
+}), { rootMargin: '100px', threshold: 0.15 });
+
+function buildGallery(cat) {
+  gal.innerHTML = '';
+  GALLERY.forEach(g => {
+    if (cat !== 'all' && cat !== g.cat) return;
+    const total = g.groups.reduce((n, gr) => n + gr.items.length, 0);
+    const head = document.createElement('div');
+    head.className = 'gal-cat-title';
+    head.innerHTML = `${g.title} <span class="cnt">${total} clips</span>`;
+    gal.appendChild(head);
+    g.groups.forEach(gr => {
+      const grid = document.createElement('div');
+      grid.className = 'gal-grid' + (gr.orient === 'landscape' ? ' landscape' : '');
+      gr.items.forEach(([id, tag]) => {
+        const card = document.createElement('div');
+        card.className = 'gcard';
+        card.innerHTML = `
+          ${tag ? `<div class="gtag">${tag}</div>` : ''}
+          <img src="assets/gallery/anchors/${id}.png" loading="lazy" alt="input ${id}"/>
+          <video loop muted playsinline preload="none" src="assets/gallery/videos/${id}.mp4"></video>`;
+        grid.appendChild(card);
+        galIO.observe(card.querySelector('video'));
+      });
+      gal.appendChild(grid);
+    });
+  });
+}
+document.querySelectorAll('.gtab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.gtab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  buildGallery(t.dataset.cat);
+});
+buildGallery('all');
+
+/* ---------- copy bibtex ---------- */
+document.getElementById('copy-bib').onclick = function () {
+  navigator.clipboard.writeText(document.querySelector('.bib pre').innerText).then(() => {
+    this.textContent = 'copied ✓';
+    setTimeout(() => this.textContent = 'copy', 1600);
+  }).catch(() => {});
+};
+</script>
+</body>
+</html>

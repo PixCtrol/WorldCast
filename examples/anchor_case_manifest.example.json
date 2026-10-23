@@ -1,0 +1,10 @@
+[
+  {
+    "case": "example_person_orbit",
+    "prompt": "A young girl with braided hair, wearing a yellow cardigan and denim overalls, sits on a wooden ladder in a grand library, intently reading a large atlas.",
+    "reference_image_path": "data/my_case/render/first_frame.png",
+    "render_path": "data/my_case/render",
+    "viewpoint_anchors_path": "data/my_case/body_views",
+    "video": "data/my_case/gt.mp4"
+  }
+]

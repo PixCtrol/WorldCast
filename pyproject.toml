@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "worldcast"
+version = "0.1.0"
+description = "Anchor-conditioned, camera-controlled video generation, built on DiffSynth-Studio"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+
+dependencies = [
+    "torch>=2.1.0",
+    "torchvision",
+    "transformers>=4.39.0",
+    "diffusers",
+    "huggingface_hub",
+    "safetensors>=0.4.3",
+    "einops",
+    "typing_extensions",
+    "sentencepiece",
+    "imageio[ffmpeg]",
+    "ftfy",
+    "regex",
+    "tqdm",
+    "Pillow",
+    "numpy",
+    "opencv-python",
+]
+
+[tool.setuptools.packages.find]
+include = ["diffsynth*"]

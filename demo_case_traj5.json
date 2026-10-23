@@ -1,0 +1,42 @@
+[
+  {
+    "case": "A360-031__portrait__flatring",
+    "prompt": "A curly-haired boy in a striped sweater and corduroy pants, holding a paper rocket, walks and waves cheerfully through a spacious, modern science museum filled with planet displays.",
+    "reference_image_path": "demo_case/A360-031__portrait__flatring/first_frame.png",
+    "render_path": "demo_case/A360-031__portrait__flatring",
+    "viewpoint_anchors_path": "demo_case/A360-031__portrait/body_views_vggt",
+    "trajectory": "flatring"
+  },
+  {
+    "case": "A360-031__portrait__lemniscate",
+    "prompt": "A curly-haired boy in a striped sweater and corduroy pants, holding a paper rocket, walks and waves cheerfully through a spacious, modern science museum filled with planet displays.",
+    "reference_image_path": "demo_case/A360-031__portrait__lemniscate/first_frame.png",
+    "render_path": "demo_case/A360-031__portrait__lemniscate",
+    "viewpoint_anchors_path": "demo_case/A360-031__portrait/body_views_vggt",
+    "trajectory": "lemniscate"
+  },
+  {
+    "case": "A360-031__portrait__smooth_flatring_tilt20",
+    "prompt": "A curly-haired boy in a striped sweater and corduroy pants, holding a paper rocket, walks and waves cheerfully through a spacious, modern science museum filled with planet displays.",
+    "reference_image_path": "demo_case/A360-031__portrait__smooth_flatring_tilt20/first_frame.png",
+    "render_path": "demo_case/A360-031__portrait__smooth_flatring_tilt20",
+    "viewpoint_anchors_path": "demo_case/A360-031__portrait/body_views_vggt",
+    "trajectory": "smooth_flatring_tilt20"
+  },
+  {
+    "case": "A360-031__portrait__180_push",
+    "prompt": "A curly-haired boy in a striped sweater and corduroy pants, holding a paper rocket, walks and waves cheerfully through a spacious, modern science museum filled with planet displays.",
+    "reference_image_path": "demo_case/A360-031__portrait__180_push/first_frame.png",
+    "render_path": "demo_case/A360-031__portrait__180_push",
+    "viewpoint_anchors_path": "demo_case/A360-031__portrait/body_views_vggt",
+    "trajectory": "180_push"
+  },
+  {
+    "case": "A360-031__portrait__zoom_out",
+    "prompt": "A curly-haired boy in a striped sweater and corduroy pants, holding a paper rocket, walks and waves cheerfully through a spacious, modern science museum filled with planet displays.",
+    "reference_image_path": "demo_case/A360-031__portrait__zoom_out/first_frame.png",
+    "render_path": "demo_case/A360-031__portrait__zoom_out",
+    "viewpoint_anchors_path": "demo_case/A360-031__portrait/body_views_vggt",
+    "trajectory": "zoom_out"
+  }
+]

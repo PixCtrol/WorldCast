@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+outputs*/
+checkpoints/
+pretrained/
+/data/
+.DS_Store
